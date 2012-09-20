@@ -17,9 +17,9 @@
 + DONE version number in the usage description
 + DONE FIXBUG of encoding of non-ASCII characters in file paths
 + NEW wiki page at bitbucket
++ DONE NEW Functional with Git
 - TODO license
 >>> 0.9
-+ DONE hehehehe
 
 - TODO NEW installation NSIS for windows
 - TODO NEW installation for linux

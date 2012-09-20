@@ -22,7 +22,7 @@ class PlainHelpFormatter(optparse.IndentedHelpFormatter):
 			return ''
 
 def quit_and_normal_commit():
-	subprocess.call(['hg commit'], shell=True)
+	subprocess.call(['git commit -a'], shell=True)
 	sys.exit(0)
 
 def normalize_log(lines):
@@ -72,7 +72,7 @@ Example TODO file:
 
 Type 'grit' whenever you want to commit. If the TODO has got new lines
 starting with '+ DONE', those tasks will be the commit message. If there is
-no task marked with '+ DONE', 'grit' behaves just like 'git commit'.
+no task marked with '+ DONE', 'grit' behaves just like 'git commit -a'.
 """
 	parser = OptionParser(usage='%prog [options]', description=desc, formatter=PlainHelpFormatter(), version="%prog "+GRITVERSION)
 	parser.add_option('-p', '--preview', 
@@ -91,63 +91,61 @@ no task marked with '+ DONE', 'grit' behaves just like 'git commit'.
 	try:
 		todofilename = repo.config_reader().get_value('grassit', 'todofile')
 	except Exception:
-		print('ERROR: todo filename not defined. Please define \'todofile\' in section \'grassit\' of the config file')
+		print("ERROR: todo filename not defined. Please define \'todofile\' in section \'grassit\' of the config file")
 		sys.exit(1)
 
 	if not todofilename:
-		print('ERROR: todo filename not defined')
+		print("ERROR: todo filename not defined")
 		sys.exit(1)
 	
 	# quit if todo file does not exist
 	if not os.path.exists(rootfolder+'/'+todofilename):
-		print('ERROR: todo file not found')
+		print("ERROR: todo file not found")
 		sys.exit(1)
 	
-	print repo
-	print repo.head
-	print repo.head.commit
 	## discover what files were modified
-	#files_modified = []
-	#for line in repo.git.execute("diff","--stat").splitlines()[0:-1]:
-	#	if line.find('+') >= 0:
-	#		files_modified.append(line.split(' ')[1])
-	
+	files_modified = []
+	#for line in repo.git.execute(['git','diff','--name-status']).splitlines()[0:-1]:
+	for line in repo.git.execute(['git','diff','--name-status']).splitlines():
+		if line[0] == 'M':
+			files_modified.append(line.split('\t')[1])
+			
 	## quit if todo file was not modified
-	#if todofilename not in files_modified:
-	#	# preview and exit
-	#	if options.preview:
-	#		print('-- Nothing from ' + todofilename + ' --')
-	#		return
-	#	quit_and_normal_commit()
-	#
+	if todofilename not in files_modified:
+		# preview and exit
+		if options.preview:
+			print('-- Nothing from ' + todofilename + ' --')
+			return
+		quit_and_normal_commit()
+	
 	## get all done lines from the diff
-	#diffoutput = repo.hg_command("diff","-U","999999999999",rootfolder.encode(sys.getfilesystemencoding())+'/'+todofilename.encode(sys.getfilesystemencoding()))
-	#log = []
-	##all_lines = diffoutput.splitlines()[4:]
-	#for line in diffoutput.splitlines():
-	#	if not options.comments:
-	#		line = ignore_comments(line)
-	#	# all new lines starting with '+ DONE' are the changelog
-	#	if _done_re.match(line) is not None:
-	#		log.append(line[1:].lstrip().replace('+','',1).lstrip().expandtabs().replace('DONE ','').rstrip())
-	#
-	## show done lines
-	#for line in log:
-	#	print(line)
-	#
-	## preview and exit
-	#if options.preview:
-	#	if not log:
-	#		print('-- Nothing from ' + todofilename + ' --')
-	#	return
-	#
-	## do the final commit, if there was a message extracted from the todo file
-	#log = normalize_log(log)
-	#if not log:
-	#	quit_and_normal_commit()
-	#else:
-	#	subprocess.Popen(['hg','commit','--message',log], shell=False)
-	#	sys.exit(0)
+	diffoutput = repo.git.execute(['git','diff','-U999999999','--',rootfolder.encode(sys.getfilesystemencoding())+'/'+todofilename.encode(sys.getfilesystemencoding())])
+	log = []
+	#all_lines = diffoutput.splitlines()[4:]
+	for line in diffoutput.splitlines():
+		if not options.comments:
+			line = ignore_comments(line)
+		# all new lines starting with '+ DONE' are the changelog
+		if _done_re.match(line) is not None:
+			log.append(line[1:].lstrip().replace('+','',1).lstrip().expandtabs().replace('DONE ','').rstrip())
+	
+	# show done lines
+	for line in log:
+		print(line)
+	
+	# preview and exit
+	if options.preview:
+		if not log:
+			print('-- Nothing from ' + todofilename + ' --')
+		return
+	
+	# do the final commit, if there was a message extracted from the todo file
+	log = normalize_log(log)
+	if not log:
+		quit_and_normal_commit()
+	else:
+		subprocess.Popen(['git','commit','--all','--message',log], shell=False)
+		sys.exit(0)
 
 if __name__ == '__main__':
 	main()
