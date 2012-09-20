@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# grassit git utility
+# git-done utility
 #
 # Copyright (c) 2012 by Andre Medeiros.
 import re
@@ -10,7 +10,7 @@ from git import *
 import os.path, sys, os
 import subprocess
 
-GRITVERSION = "0.9"
+GITDONEVERSION = "0.9"
 _bullet_re = re.compile(r'\s*[-+*]\s+')
 _done_re = re.compile(r'\+[ \t]*\+ *DONE')
 
@@ -48,14 +48,14 @@ def ignore_comments(line):
 
 def main(env=os.environ):
 	desc="""\
-Grassit """+GRITVERSION+""" ('hyg') is a Git tool that performs git commits using a TODO
+Done """+GITDONEVERSION+""" ('hyg') is a Git tool that performs commits using a TODO
 file to get the commit message.
 Any line in your TODO file marked as done will be used as part of the commit
-message when you execute Grassit.
+message when you execute git done.
 
 In your Git repository, set the name of your todo file in hgrc:
 
-	[grassit]
+	[gitdone]
 	todofile = todo.txt
 
 Your todo file should have one task per line. Todo tasks should start with
@@ -70,11 +70,11 @@ Example TODO file:
 - refactor those ugly classes
 - TODO fix bug #3
 
-Type 'grit' whenever you want to commit. If the TODO has got new lines
+Type 'git done' whenever you want to commit. If the TODO has got new lines
 starting with '+ DONE', those tasks will be the commit message. If there is
-no task marked with '+ DONE', 'grit' behaves just like 'git commit -a'.
+no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 """
-	parser = OptionParser(usage='%prog [options]', description=desc, formatter=PlainHelpFormatter(), version="%prog "+GRITVERSION)
+	parser = OptionParser(usage='%prog [options]', description=desc, formatter=PlainHelpFormatter(), version="%prog "+GITDONEVERSION)
 	parser.add_option('-p', '--preview', 
 		action='store_true', dest='preview', default=False, 
 		help=u"shows what message would be committed, but does not commit".encode(sys.stdout.encoding))
@@ -89,7 +89,7 @@ no task marked with '+ DONE', 'grit' behaves just like 'git commit -a'.
 	repo = Repo(os.path.abspath(os.curdir.decode(sys.stdin.encoding)))
 	rootfolder = repo.working_tree_dir
 	try:
-		todofilename = repo.config_reader().get_value('grassit', 'todofile')
+		todofilename = repo.config_reader().get_value('gitdone', 'todofile')
 	except Exception:
 		print("ERROR: todo filename not defined. Please define \'todofile\' in section \'grassit\' of the config file")
 		sys.exit(1)

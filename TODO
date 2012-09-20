@@ -18,6 +18,7 @@
 + DONE FIXBUG of encoding of non-ASCII characters in file paths
 + NEW wiki page at bitbucket
 + DONE NEW Functional with Git
++ DONE IMPROVE Better name: git done
 - TODO license
 >>> 0.9
 
