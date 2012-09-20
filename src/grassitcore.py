@@ -91,7 +91,7 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	try:
 		todofilename = repo.config_reader().get_value('gitdone', 'todofile')
 	except Exception:
-		print("ERROR: todo filename not defined. Please define \'todofile\' in section \'grassit\' of the config file")
+		print("ERROR: todo filename not defined. Please define \'todofile\' in section \'gitdone\' of the config file")
 		sys.exit(1)
 
 	if not todofilename:
@@ -121,17 +121,35 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	## get all done lines from the diff
 	diffoutput = repo.git.execute(['git','diff','-U999999999','--',rootfolder.encode(sys.getfilesystemencoding())+'/'+todofilename.encode(sys.getfilesystemencoding())])
 	log = []
-	#all_lines = diffoutput.splitlines()[4:]
-	for line in diffoutput.splitlines():
+	sprint_has_to_do = False
+	sprint_has_new_done = False
+	tags = []
+	for line in diffoutput.splitlines()[5:]:
 		if not options.comments:
 			line = ignore_comments(line)
-		# all new lines starting with '+ DONE' are the changelog
-		if _done_re.match(line) is not None:
-			log.append(line[1:].lstrip().replace('+','',1).lstrip().expandtabs().replace('DONE ','').rstrip())
-	
+		if line[0] != '-':
+			# detected to do task
+			if len(line)>=2 and line[1:].lstrip()[0] == '-':
+				sprint_has_to_do = True
+			# all new lines starting with '+ DONE' are the changelog
+			if _done_re.match(line) is not None:
+				sprint_has_new_done = True
+				log.append(line[1:].lstrip().replace('+','',1).lstrip().expandtabs().replace('DONE ','').rstrip())
+			# detected tag
+			if line[1:].lstrip()[0:3] == '>>>':
+				if sprint_has_new_done and not sprint_has_to_do:
+					tags.append(line[1:].lstrip()[3:].lstrip())
+				sprint_has_new_done = False
+				sprint_has_to_do = False
+
 	# show done lines
 	for line in log:
 		print(line)
+	
+	# show tags to apply
+	for tag in tags:
+		print('>>> '+tag)
+		
 	
 	# preview and exit
 	if options.preview:
@@ -144,8 +162,17 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	if not log:
 		quit_and_normal_commit()
 	else:
-		subprocess.Popen(['git','commit','--all','--message',log], shell=False)
-		sys.exit(0)
+		repo.git.execute(['git','commit','--all','--message',log])
+		for tag in tags:
+			splitted = tag.split()
+			message = ''
+			if len(splitted)>=3 and splitted[1]=='-m':
+				message = ' '.join(splitted[2:])
+				repo.git.execute(['git','tag','-a',splitted[0],'-m',message])
+			else:
+				repo.git.execute(['git','tag',splitted[0].lstrip().rstrip()])
+				
+	return
 
 if __name__ == '__main__':
 	main()
