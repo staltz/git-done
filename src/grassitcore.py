@@ -127,7 +127,7 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	for line in diffoutput.splitlines()[5:]:
 		if not options.comments:
 			line = ignore_comments(line)
-		if line[0] != '-':
+		if line[0] != '-' and len(line[1:].strip())>0:
 			# detected to do task
 			if len(line)>=2 and line[1:].lstrip()[0] == '-':
 				sprint_has_to_do = True
