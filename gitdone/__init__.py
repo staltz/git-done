@@ -2,17 +2,21 @@
 #
 # git-done utility
 #
-# Copyright (c) 2012 by Andre Medeiros.
+# Copyright (c) 2012 by Andre Staltz.
+
 import re
+import sys
+import os
+import subprocess
 import optparse
 from optparse import OptionParser
-from git import *
-import os.path, sys, os
-import subprocess
+import git
 
-GITDONEVERSION = "0.9"
+
+GITDONEVERSION = "0.1.0"
 _bullet_re = re.compile(r'\s*[-+*]\s+')
 _done_re = re.compile(r'\+[ \t]*\+ *DONE')
+
 
 class PlainHelpFormatter(optparse.IndentedHelpFormatter): 
 	def format_description(self, description):
@@ -21,9 +25,11 @@ class PlainHelpFormatter(optparse.IndentedHelpFormatter):
 		else:
 			return ''
 
+
 def quit_and_normal_commit():
 	subprocess.call(['git commit -a'], shell=True)
 	sys.exit(0)
+
 
 def normalize_log(lines):
 	"""Outdents newly inserted list items."""
@@ -38,6 +44,7 @@ def normalize_log(lines):
 				lines[idx] = line[last_indention:]
 	return '; '.join(lines)
 
+
 def ignore_comments(line):
 	"""Anything after \'##\' in a line is considered a comment, will not show in the commit message"""
 	poscomment = line.find('##')
@@ -46,11 +53,12 @@ def ignore_comments(line):
 	else:
 		return line
 
+
 def main(env=os.environ):
 	desc="""\
-Done """+GITDONEVERSION+""" ('hyg') is a Git tool that performs commits using a TODO
-file to get the commit message.
-Any line in your TODO file marked as done will be used as part of the commit
+Git done is a tool that performs commits using a TODO file to get the commit 
+message.
+Any line in your TODO file marked as done will be used as part of the commit 
 message when you execute git done.
 
 In your Git repository, set the name of your todo file in hgrc:
@@ -74,7 +82,11 @@ Type 'git done' whenever you want to commit. If the TODO has got new lines
 starting with '+ DONE', those tasks will be the commit message. If there is
 no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 """
-	parser = OptionParser(usage='%prog [options]', description=desc, formatter=PlainHelpFormatter(), version="%prog "+GITDONEVERSION)
+	parser = OptionParser(
+		usage='%prog [options]',
+		description=desc,
+		formatter=PlainHelpFormatter(),
+		version="%prog "+GITDONEVERSION)
 	parser.add_option('-p', '--preview', 
 		action='store_true', dest='preview', default=False, 
 		help=u"shows what message would be committed, but does not commit".encode(sys.stdout.encoding))
@@ -86,7 +98,7 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	(options, args) = parser.parse_args()
 
 	# build repo reference
-	repo = Repo(os.path.abspath(os.curdir.decode(sys.stdin.encoding)))
+	repo = git.Repo(os.path.abspath(os.curdir.decode(sys.stdin.encoding)))
 	rootfolder = repo.working_tree_dir
 	try:
 		todofilename = repo.config_reader().get_value('gitdone', 'todofile')
@@ -105,7 +117,6 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	
 	## discover what files were modified
 	files_modified = []
-	#for line in repo.git.execute(['git','diff','--name-status']).splitlines()[0:-1]:
 	for line in repo.git.execute(['git','diff','--name-status']).splitlines():
 		if line[0] == 'M':
 			files_modified.append(line.split('\t')[1])
@@ -150,7 +161,6 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	for tag in tags:
 		print('>>> '+tag)
 		
-	
 	# preview and exit
 	if options.preview:
 		if not log:
@@ -171,8 +181,8 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 				repo.git.execute(['git','tag','-a',splitted[0],'-m',message])
 			else:
 				repo.git.execute(['git','tag',splitted[0].lstrip().rstrip()])
-				
 	return
 
 if __name__ == '__main__':
 	main()
+
