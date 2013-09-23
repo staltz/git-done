@@ -10,7 +10,7 @@ using the TODO file. This way, each task is supposed to be a small piece of cont
 Installation
 ============
 
-```pip install git+git://github.com/staltz/git-done.git```
+(`sudo`) ```pip install git+git://github.com/staltz/git-done.git```
 
 Usage
 =====
