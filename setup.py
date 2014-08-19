@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
 	name="git-done",
-	version='0.1.0',
+	version='1.0.0',
 	author="Andre Staltz",
 	author_email='andrestaltz@gmail.com',
 	packages=['gitdone'],
