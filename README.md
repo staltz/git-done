@@ -16,7 +16,7 @@ Usage
 Setup your git repo
 -------------------
 
-**Create a file named TODO and `git add` it to your repository at the root level.**
+**Create a file named TODO at the root level of your project, and `git add` it to the repository.**
 
 Workflow
 --------
