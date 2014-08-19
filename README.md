@@ -1,11 +1,9 @@
 git-done
 ========
 
-### Git done is a tool to manage commit messages with a TODO file.
+### The simplest TODO-based task tracker integrated into git.
 
-It converts done-marked tasks in your TODO file into commit messages.
-Essentially it's a lightweight task tracker integrated into git. You plan your future commit messages
-using the TODO file. This way, each task is supposed to be a small piece of contribution you should work on.
+**Git done is a tool to manage commit messages with a TODO file.** It converts done-marked tasks in your TODO file into commit messages. You plan your future commit messages using the TODO file. This way, each task is supposed to be a small piece of contribution you should work on.
 
 Installation
 ============
