@@ -11,14 +11,13 @@ import subprocess
 import optparse
 from optparse import OptionParser
 import git
+from termcolor import colored
 
 
-GITDONEVERSION = "1.0.0"
-_bullet_re = re.compile(r'\s*[-+*]\s+')
-_done_re = re.compile(r'\+[ \t]*\+ *DONE')
+GITDONEVERSION = "2.0.0"
 
 
-class PlainHelpFormatter(optparse.IndentedHelpFormatter): 
+class PlainHelpFormatter(optparse.IndentedHelpFormatter):
 	def format_description(self, description):
 		if description:
 			return description + '\n'
@@ -35,7 +34,7 @@ def normalize_log(lines):
 	"""Outdents newly inserted list items."""
 	last_indention = 0
 	for idx, line in enumerate(lines):
-		match = _bullet_re.match(line)
+		match = re.compile(r'\s+').match(line)
 		if match is not None:
 			last_indention = match.end()
 			lines[idx] = line[last_indention:]
@@ -46,7 +45,8 @@ def normalize_log(lines):
 
 
 def ignore_comments(line):
-	"""Anything after \'##\' in a line is considered a comment, will not show in the commit message"""
+	'''Anything after \'##\' in a line is considered a comment, will not show
+	in the commit message'''
 	poscomment = line.find('##')
 	if poscomment >= 0:
 		return line[0:poscomment]
@@ -55,40 +55,32 @@ def ignore_comments(line):
 
 
 def main(env=os.environ):
-	desc="""\
+	desc='''\
 Git done is a tool that performs commits using a TODO file to get the commit 
 message.
 Any line in your TODO file marked as done will be used as part of the commit 
 message when you execute git done.
 
-In your Git repository, set the name of your todo file in hgrc:
-
-	[gitdone]
-	todofile = todo.txt
-
 Your todo file should have one task per line. Todo tasks should start with
-'- ', while done tasks should start with '+ '. When a done task is supposed
-to be reported in the commit message, have the line start with '+ DONE'. Start
-a line with '- TODO' just to tell yourself that the task should be reported
-in a commit message, when you change it to '+ DONE'.
+'TODO', while done tasks should start with 'DONE'.
 
 Example TODO file:
-+ use LinkedList instead of List
-+ DONE NEW login functionality ##I am a comment
-- refactor those ugly classes
-- TODO fix bug #3
+DONE Use LinkedList instead of List
+DONE Login functionality ## I am a comment
+TODO Refactor those ugly classes
+TODO Fix bug #3
 
 Type 'git done' whenever you want to commit. If the TODO has got new lines
-starting with '+ DONE', those tasks will be the commit message. If there is
-no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
-"""
+starting with 'DONE', those tasks will be the commit message. If there is
+no task marked with 'DONE', 'git done' behaves just like 'git commit -a'.
+'''
 	parser = OptionParser(
 		usage='%prog [options]',
 		description=desc,
 		formatter=PlainHelpFormatter(),
 		version="%prog "+GITDONEVERSION)
-	parser.add_option('-p', '--preview', 
-		action='store_true', dest='preview', default=False, 
+	parser.add_option('-p', '--preview',
+		action='store_true', dest='preview', default=False,
 		help=u"shows what message would be committed, but does not commit".encode(sys.stdout.encoding))
 	parser.add_option('-c', '--comments',
 		action='store_true', dest='comments', default=False,
@@ -103,32 +95,27 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	try:
 		todofilename = repo.config_reader().get_value('gitdone', 'todofile')
 	except Exception:
-		print("ERROR: todo filename not defined. Please define \'todofile\' in section \'gitdone\' of the config file")
-		sys.exit(1)
+		todofilename = "TODO"
 
-	if not todofilename:
-		print("ERROR: todo filename not defined")
-		sys.exit(1)
-	
 	# quit if todo file does not exist
 	if not os.path.exists(rootfolder+'/'+todofilename):
-		print("ERROR: todo file not found")
+		print("ERROR: file "+ todofilename +" not found")
 		sys.exit(1)
-	
+
 	## discover what files were modified
 	files_modified = []
 	for line in repo.git.execute(['git','diff','--name-status']).splitlines():
 		if line[0] == 'M':
 			files_modified.append(line.split('\t')[1])
-			
+
 	## quit if todo file was not modified
 	if todofilename not in files_modified:
 		# preview and exit
 		if options.preview:
-			print('-- Nothing from ' + todofilename + ' --')
+			print('(Nothing from ' + todofilename + ')')
 			return
 		quit_and_normal_commit()
-	
+
 	## get all done lines from the diff
 	diffoutput = repo.git.execute(['git','diff','-U999999999','--',rootfolder.encode(sys.getfilesystemencoding())+'/'+todofilename.encode(sys.getfilesystemencoding())])
 	log = []
@@ -138,35 +125,39 @@ no task marked with '+ DONE', 'git done' behaves just like 'git commit -a'.
 	for line in diffoutput.splitlines()[5:]:
 		if not options.comments:
 			line = ignore_comments(line)
-		if line[0] != '-' and len(line[1:].strip())>0:
-			# detected to do task
-			if len(line)>=2 and line[1:].lstrip()[0] == '-':
-				sprint_has_to_do = True
-			# all new lines starting with '+ DONE' are the changelog
-			if _done_re.match(line) is not None:
-				sprint_has_new_done = True
-				log.append(line[1:].lstrip().replace('+','',1).lstrip().expandtabs().replace('DONE ','').rstrip())
-			# detected tag
-			if line[1:].lstrip()[0:3] == '>>>':
-				if sprint_has_new_done and not sprint_has_to_do:
-					tags.append(line[1:].lstrip()[3:].lstrip())
-				sprint_has_new_done = False
-				sprint_has_to_do = False
+		# Detected TODO
+		if re.compile(r'\+{0,1}[ \t]*TODO.+').match(line):
+			sprint_has_to_do = True
+		# Detected DONE
+		elif re.compile(r'\+[ \t]*DONE.+').match(line):
+			sprint_has_new_done = True
+			log.append(line[1:].lstrip().replace('DONE','').lstrip().expandtabs().rstrip())
+		# Detected tag
+		elif re.compile(r'\+{0,1}[ \t]*\>\>\>.+').match(line):
+			if sprint_has_new_done and not sprint_has_to_do:
+				tags.append(line[1:].lstrip().replace('>>>','').strip())
+			# Reset sprint
+			sprint_has_new_done = False
+			sprint_has_to_do = False
 
 	# show done lines
+	if len(log) > 0:
+		print("Done on this commit:\n")
 	for line in log:
-		print(line)
-	
+		print colored('    '+line, 'green')
+	if len(log) > 0:
+		print('') # newline
+
 	# show tags to apply
 	for tag in tags:
-		print('>>> '+tag)
-		
+		print("This commit is tagged as "+colored(tag, 'yellow'))
+
 	# preview and exit
 	if options.preview:
 		if not log:
-			print('-- Nothing from ' + todofilename + ' --')
+			print('(Nothing from ' + todofilename + ')')
 		return
-	
+
 	# do the final commit, if there was a message extracted from the todo file
 	log = normalize_log(log)
 	if not log:
