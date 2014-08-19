@@ -8,7 +8,7 @@ git-done
 Installation
 ============
 
-(`sudo`) ```pip install git+git://github.com/staltz/git-done.git#v2.0.0```
+(`sudo`) ```pip install git+git://github.com/staltz/git-done.git#v2.0.1```
 
 Usage
 =====
