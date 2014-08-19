@@ -2,7 +2,7 @@
 #
 # git-done utility
 #
-# Copyright (c) 2012 by Andre Staltz.
+# Copyright (c) 2012-2014 by Andre Staltz.
 
 import re
 import sys
@@ -13,7 +13,7 @@ from optparse import OptionParser
 import git
 
 
-GITDONEVERSION = "0.1.0"
+GITDONEVERSION = "1.0.0"
 _bullet_re = re.compile(r'\s*[-+*]\s+')
 _done_re = re.compile(r'\+[ \t]*\+ *DONE')
 
