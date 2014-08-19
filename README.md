@@ -18,7 +18,7 @@ Usage
 Setup your git repo
 -------------------
 
-**Create a file named TODO and `git add` it to your repository.**
+**Create a file named TODO and `git add` it to your repository at the root level.**
 
 Workflow
 --------
@@ -32,7 +32,7 @@ DONE Add more unit tests for module x
 TODO Refactor file y
 ```
 
-**2.** Start working on the issue (in this case, you are 'Refactor file y').
+**2.** Start working on the issue (it should be topmost TODO, i.e., 'Refactor file y').
 
 **3.** When the task is done, flip the flag of the task from `TODO` to `DONE`:
 
